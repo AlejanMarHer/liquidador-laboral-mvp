@@ -9,9 +9,8 @@ import {
 } from './settlementCalculator';
 
 export default function LiquidadorLaboralPage() {
-  // 1. Estados del formulario con valores iniciales de prueba
-  const [workerName, setWorkerName] = useState('Juan Pérez');
-  const [workerId, setWorkerId] = useState('1.020.304.050');
+  const [workerName, setWorkerName] = useState('Alejandro Martinez');
+  const [workerId, setWorkerId] = useState('1014238347');
   const [employerName, setEmployerName] = useState('Inversiones Ejemplo S.A.S.');
 
   const [startDate, setStartDate] = useState('2024-03-15');
@@ -19,27 +18,22 @@ export default function LiquidadorLaboralPage() {
   const [expectedEndDate, setExpectedEndDate] = useState('2026-12-30');
 
   const [contractType, setContractType] = useState<ContractType>('INDEFINIDO');
-  const [terminationReason, setTerminationReason] =
-    useState<TerminationReason>('SIN_JUSTA_CAUSA');
+  const [terminationReason, setTerminationReason] = useState<TerminationReason>('SIN_JUSTA_CAUSA');
 
   const [baseSalary, setBaseSalary] = useState<number>(2500000);
   const [variableSalaryAvg, setVariableSalaryAvg] = useState<number>(0);
   const [isIntegralSalary, setIsIntegralSalary] = useState<boolean>(false);
   const [forceExcludeTransport, setForceExcludeTransport] = useState<boolean>(false);
 
-  // Parámetros normativos configurables
   const [smmlv, setSmmlv] = useState<number>(1423500);
   const [transportAllowanceLegal, setTransportAllowanceLegal] = useState<number>(200000);
 
-  // Novedades
   const [vacationDaysTaken, setVacationDaysTaken] = useState<number>(0);
   const [unpaidLeaveDaysCurrentYear, setUnpaidLeaveDaysCurrentYear] = useState<number>(0);
   const [unpaidLeaveDaysTotal, setUnpaidLeaveDaysTotal] = useState<number>(0);
 
-  // Estado para el botón de descarga PDF
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
-  // Formateador de pesos colombianos
   const formatCOP = (val: number) =>
     new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -47,7 +41,6 @@ export default function LiquidadorLaboralPage() {
       maximumFractionDigits: 0,
     }).format(val);
 
-  // 2. Conexión en tiempo real con el motor jurídico
   const calculationState = useMemo(() => {
     try {
       const input: SettlementInput = {
@@ -73,28 +66,16 @@ export default function LiquidadorLaboralPage() {
       const result = calculateLaborSettlement(input);
       return { result, error: null };
     } catch (err: any) {
-      return { result: null, error: err.message || 'Error en los datos ingresados.' };
+      return { result: null, error: err.message || 'Verifica la coherencia de las fechas.' };
     }
   }, [
-    startDate,
-    endDate,
-    expectedEndDate,
-    contractType,
-    terminationReason,
-    baseSalary,
-    variableSalaryAvg,
-    isIntegralSalary,
-    smmlv,
-    transportAllowanceLegal,
-    forceExcludeTransport,
-    vacationDaysTaken,
-    unpaidLeaveDaysCurrentYear,
-    unpaidLeaveDaysTotal,
+    startDate, endDate, expectedEndDate, contractType, terminationReason,
+    baseSalary, variableSalaryAvg, isIntegralSalary, smmlv, transportAllowanceLegal,
+    forceExcludeTransport, vacationDaysTaken, unpaidLeaveDaysCurrentYear, unpaidLeaveDaysTotal,
   ]);
 
   const { result, error } = calculationState;
 
-  // 3. Función para generar y descargar el PDF al hacer clic
   const handleDownloadPdf = async () => {
     if (!result) return;
     try {
@@ -105,15 +86,8 @@ export default function LiquidadorLaboralPage() {
       const doc = (
         <SettlementPdfDocument
           data={{
-            workerName,
-            workerId,
-            employerName,
-            startDate,
-            endDate,
-            contractType,
-            terminationReason,
-            baseSalary,
-            result,
+            workerName, workerId, employerName, startDate, endDate,
+            contractType, terminationReason, baseSalary, result,
           }}
         />
       );
@@ -122,543 +96,300 @@ export default function LiquidadorLaboralPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Liquidacion_${workerName.replace(/\s+/g, '_')}.pdf`;
+      link.download = `Dictamen_${workerName.replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error generando el PDF:', err);
-      alert('Hubo un error al generar el PDF. Verifica que SettlementPdfDocument.tsx exista en la carpeta app.');
+      alert('Hubo un error al generar el PDF.');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Encabezado con Botón de Descarga PDF */}
-        <header className="mb-8 border-b border-slate-200 pb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <span className="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-1 rounded-full mb-2">
-              Régimen Laboral Colombiano • Cómputo 30/360
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              Liquidador Jurídico de Prestaciones e Indemnizaciones
-            </h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Cálculo automático conforme al Código Sustantivo del Trabajo (Arts. 64, 65, 186, 249 y 306).
-            </p>
-          </div>
-
-          {/* Botón visible en la esquina superior derecha */}
-          {result && (
-            <div className="shrink-0">
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={isGeneratingPdf}
-                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-md transition cursor-pointer"
-              >
-                {isGeneratingPdf ? (
-                  'Generando documento...'
-                ) : (
-                  <>
-                    <span>📄</span>
-                    <span>Descargar Dictamen en PDF</span>
-                  </>
-                )}
-              </button>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20">
+      
+      {/* BARRA DE NAVEGACIÓN SUPERIOR (STICKY) */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-2.5 rounded-xl shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-4"></path></svg>
             </div>
-          )}
-        </header>
-
-        {/* Contenedor Principal: Izquierda Formulario / Derecha Resultados */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* COLUMNA IZQUIERDA: FORMULARIO (5 columnas) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Bloque 1: Identificación de las Partes */}
-            <section className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-              <h2 className="text-base font-semibold text-slate-800 mb-4 border-b pb-2">
-                1. Datos de las Partes (Para el Reporte)
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Nombre del Trabajador
-                  </label>
-                  <input
-                    type="text"
-                    value={workerName}
-                    onChange={(e) => setWorkerName(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Documento (C.C.)
-                    </label>
-                    <input
-                      type="text"
-                      value={workerId}
-                      onChange={(e) => setWorkerId(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Empleador / Empresa
-                    </label>
-                    <input
-                      type="text"
-                      value={employerName}
-                      onChange={(e) => setEmployerName(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Bloque 2: Parámetros del Contrato */}
-            <section className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-              <h2 className="text-base font-semibold text-slate-800 mb-4 border-b pb-2">
-                2. Vigencia y Modalidad del Contrato
-              </h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Fecha de Inicio
-                    </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Fecha de Terminación
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Modalidad Contractual
-                  </label>
-                  <select
-                    value={contractType}
-                    onChange={(e) => setContractType(e.target.value as ContractType)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="INDEFINIDO">Término Indefinido (Art. 47 CST)</option>
-                    <option value="FIJO">Término Fijo (Art. 46 CST)</option>
-                    <option value="OBRA_LABOR">Obra o Labor Contratada (Art. 45 CST)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Causa de Terminación
-                  </label>
-                  <select
-                    value={terminationReason}
-                    onChange={(e) =>
-                      setTerminationReason(e.target.value as TerminationReason)
-                    }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="SIN_JUSTA_CAUSA">
-                      Despido Sin Justa Causa / Renuncia Motivada
-                    </option>
-                    <option value="RENUNCIA_O_MUTUO_ACUERDO">
-                      Renuncia Voluntaria o Mutuo Acuerdo
-                    </option>
-                    <option value="JUSTA_CAUSA">
-                      Despido con Justa Causa Comprobada (Art. 62 CST)
-                    </option>
-                    <option value="EXPIRACION_PLAZO">
-                      Vencimiento del Plazo Pactado / Fin de Obra
-                    </option>
-                  </select>
-                </div>
-
-                {contractType !== 'INDEFINIDO' &&
-                  terminationReason === 'SIN_JUSTA_CAUSA' && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <label className="block text-xs font-semibold text-amber-900 mb-1">
-                        Fecha en que vencía el plazo o terminaba la obra
-                      </label>
-                      <input
-                        type="date"
-                        value={expectedEndDate}
-                        onChange={(e) => setExpectedEndDate(e.target.value)}
-                        className="w-full rounded-lg border border-amber-300 px-3 py-2 text-sm bg-white"
-                      />
-                      <p className="text-[11px] text-amber-700 mt-1">
-                        Requerido por el Art. 64 CST para liquidar el tiempo faltante.
-                      </p>
-                    </div>
-                  )}
-              </div>
-            </section>
-
-            {/* Bloque 3: Salario y Parámetros */}
-            <section className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-              <h2 className="text-base font-semibold text-slate-800 mb-4 border-b pb-2">
-                3. Estructura Salarial (COP)
-              </h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Salario Básico Mensual ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={baseSalary}
-                      onChange={(e) => setBaseSalary(Number(e.target.value))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Promedio Variable Mensual ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={variableSalaryAvg}
-                      onChange={(e) => setVariableSalaryAvg(Number(e.target.value))}
-                      placeholder="Comisiones, horas extras..."
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 pt-1">
-                  <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isIntegralSalary}
-                      onChange={(e) => setIsIntegralSalary(e.target.checked)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span>Es Salario Integral (Art. 132 CST - Excluye cesantías y prima)</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={forceExcludeTransport}
-                      onChange={(e) => setForceExcludeTransport(e.target.checked)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span>
-                      Excluir auxilio de transporte (ej. transporte suministrado por empresa)
-                    </span>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                      SMMLV Vigente ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={smmlv}
-                      onChange={(e) => setSmmlv(Number(e.target.value))}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                      Auxilio Transporte Legal ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={transportAllowanceLegal}
-                      onChange={(e) => setTransportAllowanceLegal(Number(e.target.value))}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Bloque 4: Novedades y Descuentos */}
-            <section className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-              <h2 className="text-base font-semibold text-slate-800 mb-4 border-b pb-2">
-                4. Vacaciones Disfrutadas y Licencias (Art. 51 CST)
-              </h2>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                    Vacaciones ya tomadas (días)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={vacationDaysTaken}
-                    onChange={(e) => setVacationDaysTaken(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                    Licencia no rem. (este año)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={unpaidLeaveDaysCurrentYear}
-                    onChange={(e) =>
-                      setUnpaidLeaveDaysCurrentYear(Number(e.target.value))
-                    }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                    Licencia no rem. (histórico)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={unpaidLeaveDaysTotal}
-                    onChange={(e) => setUnpaidLeaveDaysTotal(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-                  />
-                </div>
-              </div>
-            </section>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dictamen Laboral Pro</h1>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Cómputo Comercial 30/360 • Art. 64 CST</p>
+            </div>
           </div>
 
-          {/* COLUMNA DERECHA: DICTAMEN DE RESULTADOS (7 columnas) */}
-          <div className="lg:col-span-7 space-y-6">
+          {result && !error && (
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="group flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-400 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md transition-all duration-300"
+            >
+              {isGeneratingPdf ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Generando PDF...
+                </span>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-y-0.5 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                  Exportar Dictamen
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/* CONTENEDOR PRINCIPAL */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* COLUMNA IZQUIERDA: FORMULARIO */}
+        <div className="lg:col-span-5 space-y-6">
+          
+          {/* Tarjeta 1: Partes */}
+          <section className="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-slate-200/50 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-200 group-hover:bg-indigo-500 transition-colors duration-300"></div>
+            <h2 className="flex items-center gap-3 text-sm font-bold text-slate-800 mb-5">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700 text-xs">1</span>
+              Datos de las Partes
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Trabajador</label>
+                <input type="text" value={workerName} onChange={(e) => setWorkerName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Cédula</label>
+                  <input type="text" value={workerId} onChange={(e) => setWorkerId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Empleador</label>
+                  <input type="text" value={employerName} onChange={(e) => setEmployerName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Tarjeta 2: Fechas y Contrato */}
+          <section className="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-slate-200/50 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-200 group-hover:bg-indigo-500 transition-colors duration-300"></div>
+            <h2 className="flex items-center gap-3 text-sm font-bold text-slate-800 mb-5">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700 text-xs">2</span>
+              Vigencia y Modalidad
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Inicio</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Terminación</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none cursor-pointer" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tipo de Contrato</label>
+                  <select value={contractType} onChange={(e) => setContractType(e.target.value as ContractType)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer">
+                    <option value="INDEFINIDO">Término Indefinido</option>
+                    <option value="FIJO">Término Fijo</option>
+                    <option value="OBRA_LABOR">Obra o Labor</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Causal de Salida</label>
+                  <select value={terminationReason} onChange={(e) => setTerminationReason(e.target.value as TerminationReason)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer">
+                    <option value="SIN_JUSTA_CAUSA">Despido Sin Justa Causa</option>
+                    <option value="RENUNCIA_O_MUTUO_ACUERDO">Renuncia / Mutuo Acuerdo</option>
+                    <option value="JUSTA_CAUSA">Con Justa Causa (Art 62)</option>
+                    <option value="EXPIRACION_PLAZO">Fin del Plazo / Obra</option>
+                  </select>
+                </div>
+              </div>
+
+              {contractType !== 'INDEFINIDO' && terminationReason === 'SIN_JUSTA_CAUSA' && (
+                <div className="p-4 bg-orange-50/50 border border-orange-200 rounded-xl animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-[11px] font-bold text-orange-800 uppercase tracking-wider mb-1.5">Vencimiento pactado (Para indemnización)</label>
+                  <input type="date" value={expectedEndDate} onChange={(e) => setExpectedEndDate(e.target.value)} className="w-full bg-white border border-orange-200 rounded-lg px-4 py-2 text-sm text-orange-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none" />
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Tarjeta 3: Salario */}
+          <section className="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-slate-200/50 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-200 group-hover:bg-indigo-500 transition-colors duration-300"></div>
+            <h2 className="flex items-center gap-3 text-sm font-bold text-slate-800 mb-5">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700 text-xs">3</span>
+              Estructura Salarial
+            </h2>
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Básico Fijo ($)</label>
+                  <input type="number" value={baseSalary} onChange={(e) => setBaseSalary(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Variable Mensual ($)</label>
+                  <input type="number" value={variableSalaryAvg} onChange={(e) => setVariableSalaryAvg(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" placeholder="Comisiones..." />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <label className="flex items-center gap-3 cursor-pointer group/check">
+                  <div className="relative flex items-center">
+                    <input type="checkbox" checked={isIntegralSalary} onChange={(e) => setIsIntegralSalary(e.target.checked)} className="peer h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border border-slate-300 checked:bg-indigo-600 checked:border-indigo-600" />
+                    <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700 group-hover/check:text-indigo-700 transition-colors">Es Salario Integral (Art. 132 CST)</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group/check">
+                  <div className="relative flex items-center">
+                    <input type="checkbox" checked={forceExcludeTransport} onChange={(e) => setForceExcludeTransport(e.target.checked)} className="peer h-5 w-5 cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border border-slate-300 checked:bg-indigo-600 checked:border-indigo-600" />
+                    <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700 group-hover/check:text-indigo-700 transition-colors">Forzar exclusión de Aux. Transporte</span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* Tarjeta 4: Descuentos */}
+          <section className="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-slate-200/50 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-200 group-hover:bg-indigo-500 transition-colors duration-300"></div>
+            <h2 className="flex items-center gap-3 text-sm font-bold text-slate-800 mb-5">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700 text-xs">4</span>
+              Novedades (Días)
+            </h2>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 leading-tight">Vacaciones tomadas</label>
+                <input type="number" min="0" value={vacationDaysTaken} onChange={(e) => setVacationDaysTaken(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-center focus:bg-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 leading-tight">Lic. no rem. (año)</label>
+                <input type="number" min="0" value={unpaidLeaveDaysCurrentYear} onChange={(e) => setUnpaidLeaveDaysCurrentYear(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-center focus:bg-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 leading-tight">Lic. no rem. (total)</label>
+                <input type="number" min="0" value={unpaidLeaveDaysTotal} onChange={(e) => setUnpaidLeaveDaysTotal(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-center focus:bg-white outline-none" />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* COLUMNA DERECHA: DASHBOARD DE RESULTADOS (STICKY) */}
+        <div className="lg:col-span-7">
+          <div className="sticky top-24 space-y-6">
             {error ? (
-              <div className="bg-red-50 border border-red-200 text-red-800 p-5 rounded-xl text-sm font-medium">
-                ⚠️ {error}
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
+                <svg className="w-6 h-6 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div>
+                  <h3 className="text-sm font-bold text-red-800">Alerta de Cálculo</h3>
+                  <p className="text-sm text-red-600 mt-1">{error}</p>
+                </div>
               </div>
             ) : (
               result && (
-                <>
-                  {/* Tarjeta Principal de Gran Total */}
-                  <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-700 pb-4 mb-4 gap-2">
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  
+                  {/* Tarjeta Gran Total (Estilo Dashboard Premium) */}
+                  <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 rounded-3xl shadow-xl shadow-slate-200 relative overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between border-b border-slate-700/50 pb-6 mb-6 gap-4">
                       <div>
-                        <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                          Total General Liquidación
-                        </p>
-                        <p className="text-3xl sm:text-4xl font-extrabold text-emerald-400 mt-1">
+                        <h3 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1.5 flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> Total Liquidación
+                        </h3>
+                        <p className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-sm">
                           {formatCOP(result.summary.grandTotal)}
                         </p>
                       </div>
-                      <div className="text-left sm:text-right text-xs text-slate-300 space-y-1">
-                        <p>
-                          <span className="text-slate-400">Trabajador:</span>{' '}
-                          <strong className="text-white">{workerName}</strong> (C.C. {workerId})
-                        </p>
-                        <p>
-                          <span className="text-slate-400">Empleador:</span>{' '}
-                          <strong className="text-white">{employerName}</strong>
-                        </p>
-                        <p>
-                          <span className="text-slate-400">Tiempo efectivo:</span>{' '}
-                          <span className="bg-slate-800 px-2 py-0.5 rounded text-emerald-300 font-semibold">
-                            {result.summary.effectiveDaysContract} días comerciales
-                          </span>
-                        </p>
+                      <div className="md:text-right text-xs text-slate-300 space-y-1.5 bg-slate-950/30 px-4 py-3 rounded-2xl backdrop-blur-sm border border-slate-700/50">
+                        <p><span className="text-slate-400 font-medium">Trabajador:</span> <strong className="text-white ml-1">{workerName}</strong></p>
+                        <p><span className="text-slate-400 font-medium">Tiempo efectivo:</span> <span className="bg-indigo-500/20 text-indigo-200 px-2 py-0.5 rounded ml-1 font-semibold border border-indigo-500/20">{result.summary.effectiveDaysContract} días</span></p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                      <div className="bg-slate-800/70 p-3 rounded-lg">
-                        <span className="text-xs text-slate-400 block">
-                          Subtotal Prestaciones
-                        </span>
-                        <span className="font-bold text-white text-base">
-                          {formatCOP(result.summary.totalPrestaciones)}
-                        </span>
+                    <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1 font-medium">Sub. Prestaciones</span>
+                        <span className="font-bold text-white text-lg tracking-tight">{formatCOP(result.summary.totalPrestaciones)}</span>
                       </div>
-                      <div className="bg-slate-800/70 p-3 rounded-lg">
-                        <span className="text-xs text-slate-400 block">
-                          Subtotal Indemnización
-                        </span>
-                        <span className="font-bold text-amber-300 text-base">
-                          {formatCOP(result.summary.totalIndemnizacion)}
-                        </span>
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1 font-medium">Sub. Indemnización</span>
+                        <span className="font-bold text-amber-300 text-lg tracking-tight">{formatCOP(result.summary.totalIndemnizacion)}</span>
                       </div>
-                      <div className="bg-slate-800/70 p-3 rounded-lg">
-                        <span className="text-xs text-slate-400 block">
-                          Auxilio de Transporte
-                        </span>
-                        <span className="font-semibold text-slate-200 text-sm">
-                          {result.summary.appliesTransportAllowance
-                            ? `Sí aplica (${formatCOP(transportAllowanceLegal)})`
-                            : 'No aplica en base'}
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-400 block mb-1 font-medium">Auxilio Transporte</span>
+                        <span className="font-semibold text-emerald-300 text-sm mt-0.5 block">
+                          {result.summary.appliesTransportAllowance ? 'Sí aplica en IBL' : 'No incluido'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Tabla Detallada de Conceptos */}
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-                      <h3 className="font-semibold text-slate-800 text-base">
-                        Desglose Técnico y Normativo por Concepto
-                      </h3>
-                      <span className="text-xs text-slate-500">
-                        Valores redondeados al peso
-                      </span>
+                  {/* Tabla Desglose Limpia */}
+                  <div className="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden mt-6">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <h3 className="font-bold text-slate-800 text-sm">Desglose Técnico y Normativo</h3>
                     </div>
 
-                    <div className="divide-y divide-slate-200">
-                      {/* Fila 1: Cesantías */}
-                      <div className="p-4 hover:bg-slate-50 transition">
-                        <div className="flex justify-between items-start">
+                    <div className="divide-y divide-slate-100">
+                      {[
+                        { title: 'Auxilio de Cesantías', data: result.breakdown.cesantias },
+                        { title: 'Intereses a Cesantías', data: result.breakdown.interesesCesantias },
+                        { title: 'Prima de Servicios', data: result.breakdown.primaServicios },
+                        { title: 'Vacaciones Compensadas', data: result.breakdown.vacaciones },
+                      ].map((item, idx) => (
+                        <div key={idx} className="p-5 flex justify-between items-center hover:bg-slate-50/80 transition-colors group">
                           <div>
-                            <span className="font-semibold text-slate-900 text-sm">
-                              1. Auxilio de Cesantías
-                            </span>
-                            <span className="ml-2 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                              {result.breakdown.cesantias.legalBasis}
-                            </span>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Fórmula: {result.breakdown.cesantias.formulaDescription}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-700 text-sm">{item.title}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-md border border-slate-200">{item.data.legalBasis}</span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1.5 font-mono bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">{item.data.formulaDescription}</p>
                           </div>
-                          <span className="font-bold text-slate-900 text-base">
-                            {formatCOP(result.breakdown.cesantias.amount)}
-                          </span>
+                          <span className="font-bold text-slate-800 text-[15px]">{formatCOP(item.data.amount)}</span>
                         </div>
-                      </div>
-
-                      {/* Fila 2: Intereses a las Cesantías */}
-                      <div className="p-4 hover:bg-slate-50 transition">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-semibold text-slate-900 text-sm">
-                              2. Intereses sobre las Cesantías (12% anual)
-                            </span>
-                            <span className="ml-2 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                              {result.breakdown.interesesCesantias.legalBasis}
-                            </span>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Fórmula: {result.breakdown.interesesCesantias.formulaDescription}
-                            </p>
+                      ))}
+                      
+                      {/* Indemnización Highlight */}
+                      <div className="p-5 flex justify-between items-center bg-amber-50/30 hover:bg-amber-50/50 transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-amber-900 text-sm">Indemnización (Art. 64)</span>
                           </div>
-                          <span className="font-bold text-slate-900 text-base">
-                            {formatCOP(result.breakdown.interesesCesantias.amount)}
-                          </span>
+                          <p className="text-xs text-amber-700/80 mt-1.5 max-w-sm leading-relaxed">{result.breakdown.indemnizacion.formulaDescription}</p>
                         </div>
-                      </div>
-
-                      {/* Fila 3: Prima de Servicios */}
-                      <div className="p-4 hover:bg-slate-50 transition">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-semibold text-slate-900 text-sm">
-                              3. Prima de Servicios (Semestre en curso)
-                            </span>
-                            <span className="ml-2 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                              {result.breakdown.primaServicios.legalBasis}
-                            </span>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Fórmula: {result.breakdown.primaServicios.formulaDescription}
-                            </p>
-                          </div>
-                          <span className="font-bold text-slate-900 text-base">
-                            {formatCOP(result.breakdown.primaServicios.amount)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Fila 4: Vacaciones */}
-                      <div className="p-4 hover:bg-slate-50 transition">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-semibold text-slate-900 text-sm">
-                              4. Compensación de Vacaciones en Dinero
-                            </span>
-                            <span className="ml-2 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                              {result.breakdown.vacaciones.legalBasis}
-                            </span>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Causadas: {result.breakdown.vacaciones.accruedDays} días | Tomadas:{' '}
-                              {vacationDaysTaken} días |{' '}
-                              <strong>
-                                Pendientes: {result.breakdown.vacaciones.pendingDays} días
-                              </strong>
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Fórmula: {result.breakdown.vacaciones.formulaDescription}
-                            </p>
-                          </div>
-                          <span className="font-bold text-slate-900 text-base">
-                            {formatCOP(result.breakdown.vacaciones.amount)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Fila 5: Indemnización Art. 64 CST */}
-                      <div className="p-4 bg-amber-50/60 hover:bg-amber-50 transition">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-semibold text-amber-950 text-sm">
-                              5. Indemnización por Despido sin Justa Causa
-                            </span>
-                            <span className="ml-2 text-xs bg-amber-200/80 text-amber-900 font-medium px-2 py-0.5 rounded">
-                              {result.breakdown.indemnizacion.legalBasis}
-                            </span>
-                            <p className="text-xs text-amber-800 mt-1">
-                              {result.breakdown.indemnizacion.formulaDescription}
-                            </p>
-                          </div>
-                          <span className="font-bold text-amber-900 text-base">
-                            {formatCOP(result.breakdown.indemnizacion.amount)}
-                          </span>
-                        </div>
+                        <span className="font-bold text-amber-600 text-[15px]">{formatCOP(result.breakdown.indemnizacion.amount)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Tarjeta Informativa de Sanción Moratoria (Art. 65 CST) */}
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900">
-                        Referencia Procesal: Indemnización Moratoria (Art. 65 CST)
-                      </h4>
-                      <p className="text-xs text-indigo-800 mt-1">
-                        {result.moratoriaReference.legalNote}
-                      </p>
-                    </div>
-                    <div className="sm:text-right shrink-0 bg-white px-4 py-2 rounded-lg border border-indigo-100">
-                      <span className="text-[11px] text-slate-500 block">
-                        Salario diario de retardo
-                      </span>
-                      <span className="text-sm font-bold text-indigo-700">
-                        {formatCOP(result.moratoriaReference.dailyRate)} / día
-                      </span>
-                    </div>
-                  </div>
-                </>
+                </div>
               )
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
