@@ -195,10 +195,10 @@ export default function LiquidadorLaboralPage() {
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20">
       
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/80 shadow-sm flex flex-col">
-        {/* --- NUEVO BOTÓN DE VOLVER (SALE DEL MARCO) --- */}
+        {/* --- NUEVO BOTÓN DE VOLVER (RUTA ABSOLUTA) --- */}
         <div className="bg-slate-50 border-b border-slate-100 px-4 sm:px-6 lg:px-8 py-2.5">
           <a 
-            href="/dashboard" 
+            href="https://legalapp-hub.vercel.app/dashboard" 
             target="_parent" 
             className="inline-flex items-center text-sm font-semibold text-[#1E3A8A] hover:text-blue-700 transition gap-1.5"
           >
